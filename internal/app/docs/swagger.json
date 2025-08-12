@@ -1,0 +1,66 @@
+{
+  "openapi": "3.0.0",
+  "info": { "title": "URL Shortener API", "version": "1.0.0" },
+  "paths": {
+    "/healthz": {
+      "get": { "summary": "Health check", "responses": { "200": { "description": "OK" } } }
+    },
+    "/shorten": {
+      "post": {
+        "summary": "Create short URL",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "url": { "type": "string", "example": "https://example.com/long" },
+                  "custom_code": { "type": "string", "example": "abc123" }
+                },
+                "required": ["url"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": { "type": "string" },
+                    "short_url": { "type": "string" },
+                    "origin_url": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Bad Request" },
+          "409": { "description": "Conflict" }
+        }
+      }
+    },
+    "/r/{code}": {
+      "get": {
+        "summary": "Redirect to original",
+        "parameters": [{ "name": "code", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "301": { "description": "Moved Permanently", "headers": { "Location": { "schema": { "type": "string" } } } },
+          "404": { "description": "Not Found" }
+        }
+      },
+      "head": {
+        "summary": "HEAD: get redirect Location",
+        "parameters": [{ "name": "code", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "301": { "description": "Moved Permanently", "headers": { "Location": { "schema": { "type": "string" } } } },
+          "404": { "description": "Not Found" }
+        }
+      }
+    }
+  }
+}
