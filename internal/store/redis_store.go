@@ -19,7 +19,8 @@ func NewRedisStore() (*RedisStore, error) {
 	addr := getenv("REDIS_ADDR", "redis:6379")
 	dbStr := getenv("REDIS_DB", "0")
 	db, _ := strconv.Atoi(dbStr)
-	ttlSec, _ := strconv.Atoi(getenv("CACHE_TTL_SECONDS", "3600"))
+	ttlSec, _ := strconv.Atoi(getenv("CACHnE_TTL_SECONDS", "3600"))
+	fmt.Println("🔍 Redis 接続先:", addr)
 
 	rdb := redis.NewClient(&redis.Options{Addr: addr, DB: db})
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)

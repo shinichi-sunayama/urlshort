@@ -1,25 +1,14 @@
-version: "3.8"
-services:
-  app:
-    build: .
-    container_name: urlshort-app
-    env_file:
-      - .env
-    ports:
-      - "8080:8080"
-    depends_on:
-      - redis
-    restart: always
+version: '3.8'
 
+services:
   redis:
-    image: redis:7-alpine
+    image: redis:7
     container_name: urlshort-redis
-    command: ["redis-server", "--appendonly", "yes"]
     ports:
-      - "6379:6379"
+      - "6380:6379"
     volumes:
       - redis-data:/data
-    restart: always
+    restart: unless-stopped
 
 volumes:
   redis-data:

@@ -1,108 +1,126 @@
-# URL Shortener API (Go + Echo + Redis)
+# 🔗 urlshort - シンプルなURL短縮サービス
 
-短縮URLを生成・リダイレクトするAPIサービス。  
-Go (Echo) + Redis、Docker Compose でマルチコンテナ構成を採用。  
-Swagger UIでAPI仕様をブラウザから確認可能。
-
----
-
-## 特徴
-
-- `/shorten` で長いURLを短縮（オプションでカスタムコードも指定可）
-- `/r/{code}` でリダイレクト
-- Redisキャッシュによる高速化
-- `/healthz` での健康チェック
-- OpenAPI（Swagger UI）対応
-- HEADメソッドでもリダイレクト先の `Location` を返却
-- 簡易レートリミット（60 req/min）
-- ユニットテスト例を同梱
+GoとRedisを使って構築した、シンプルかつ拡張性の高い**URL短縮サービス**です。  
+フォームUI、カスタムコード対応、キャッシュ対応、Docker構成などを実装済み。
 
 ---
 
-## 起動方法
+## 🚀 主な特徴
 
-```bash
-docker compose up --build
-起動後:
+- ✅ 任意のURLを短縮し、リダイレクト可能なコードに変換
+- ✅ Redisによる高速な永続保存＆キャッシュ対応
+- ✅ カスタムURLコードの指定も可能（例：`/r/my-code`）
+- ✅ BootstrapでスタイリングされたUI
+- ✅ コピー用ボタン付き（短縮URLをワンクリックでコピー）
+- ✅ Docker & docker-compose 対応
+- ✅ Web UIはGoの `html/template` で構築
+- ✅ SwaggerでAPIドキュメント提供可能（内部にjsonあり）
 
-健康チェック: http://localhost:8080/healthz → ok
+---
 
-Swagger UI: http://localhost:8080/docs
+## 🧱 使用技術スタック
 
-Swagger JSON: http://localhost:8080/swagger.json
+| 分類          | 技術                                      |
+|---------------|-------------------------------------------|
+| 言語           | Go 1.20+                                  |
+| Webフレーム    | [Echo](https://echo.labstack.com/) v4     |
+| テンプレート   | `html/template`                           |
+| ストレージ     | Redis（キャッシュ＋永続HSET）            |
+| キャッシュTTL  | 環境変数で指定（デフォルト：3600秒）      |
+| API管理        | Swagger JSON（`internal/app/docs`）       |
+| スタイル       | Bootstrap 5.x                             |
 
-使用例（cmd.exe）
-REM 短縮URLを作成
-curl -X POST http://localhost:8080/shorten ^
-  -H "Content-Type: application/json" ^
-  -d "{\"url\": \"https://example.com/some/very/long/path\"}"
+---
 
-REM 短縮コードを使ってアクセス
-curl -i http://localhost:8080/r/99jnEc
+## 📁 ディレクトリ構成
 
-REM HEADでリダイレクト先だけ確認
-curl -IL http://localhost:8080/r/99jnEc
-Redisでの確認
-docker exec -it urlshort-redis redis-cli
-keys *
-get short:<code>
-短縮コード → 元URL を Redis にキャッシュ（永続ストレージにも保存可）
-
-ステータスコード方針:
-
-短縮作成成功: 201 Created
-
-リダイレクト成功: 301 Moved Permanently
-
-存在しないコード: 404 Not Found
-
-バリデーションエラー: 400 Bad Request
-
-Swagger UI
-ブラウザで http://localhost:8080/docs
-
-画面上でエンドポイントの動作を確認可能
-
-ユニットテスト（例）
-internal/core/service_test.go に Shorten / Resolve のテーブルテスト例を収録。
-
-実行:
-
-go test ./...
-
-フォルダ構成
+```plaintext
 urlshort/
-├── cmd/
-│   └── server/main.go
+├── cmd/server/
+│   ├── main.go             # 起動エントリ
+│   ├── .env                # 接続先など設定
+│   └── templates/
+│       └── index.html      # UIテンプレート（フォーム＋結果表示）
+│
 ├── internal/
-│   ├── app/server.go
-│   ├── core/service.go
-│   ├── core/service_test.go
-│   └── infra/redis.go
-├── docs/swagger.json
-├── docker-compose.yml
-├── Dockerfile
-├── go.mod
-└── README.md
+│   ├── app/
+│   │   ├── server.go       # ルーティング・UIハンドラ
+│   │   ├── renderer.go     # Echoテンプレートレンダラ
+│   │   └── docs/
+│   │       └── swagger.json# APIドキュメント
+│   │
+│   ├── logic/
+│   │   ├── service.go      # コアビジネスロジック
+│   │   ├── codegen.go      # ランダムコード生成
+│   │   └── service_test.go # 単体テスト
+│   │
+│   └── store/
+│       └── redis_store.go  # Redisとのやりとり
+│
+├── docker-compose.yml      # Redis含むサービス構成
+├── Dockerfile              # Goアプリのビルド用
+├── go.mod / go.sum         # モジュール定義
+├── LICENSE
+├── server.exe              # Windowsビルド済みバイナリ（例）
+└── README.md               # ← 本ファイル
+🖥 画面イメージ
+✔️ URLフォームに入力 → 短縮ボタン → 結果表示
 
----
+✔️ 短縮URLはクリックでコピー可能
 
-## GitHub Push 手順（cmd.exe）
+✔️ Bootstrapでスタイリング済み
 
-```bat
-REM 1. 作業ディレクトリへ移動
-cd C:\urlshort
+🔧 .env構成
+以下のような .env を cmd/server/ に配置してください：
 
-REM 2. 最新差分を追加
-git add .
+PORT=8081
+BASE_URL=http://localhost:8081
+REDIS_ADDR=localhost:6379
+REDIS_DB=0
+CACHE_TTL_SECONDS=3600
+REDIS_URL=redis:6379
+📦 起動方法（ローカル）
+✅ 前提
+Redisを localhost:6379 または .envの設定に準拠して起動済みであること
 
-REM 3. コミット（メッセージは適宜変更）
-git commit -m "feat: add Swagger UI, health check, HEAD method support"
+✅ 起動
+cd cmd/server
+go run main.go
+→ http://localhost:8081 にアクセス
 
-REM 4. 最新のmainブランチを取り込み（コンフリクト回避）
-git pull --rebase origin main
+🐳 Docker / docker-compose
 
-REM 5. リモートへPush
-git push origin main
+Redis付きで立ち上げるには：
+docker-compose up --build
 
-⚠️ git pull --rebase でエラーが出た場合は、競合解消後に再度 git rebase --continue を実行してから git push します。
+またはポート競合時：
+services:
+  redis:
+    ports:
+      - "6380:6379"  # ホスト6380 → コンテナ6379
+.env 側も合わせて REDIS_ADDR=localhost:6380 にしてください。
+
+✅ 主なルーティング
+Method	Path	説明
+GET	/	入力フォーム画面
+POST	/	URLを短縮（フォーム送信）
+GET	/r/:code	短縮コードからリダイレクト
+
+✨ 実装済み機能一覧
+ 入力フォーム
+
+ 短縮コード自動生成
+
+ 任意コードの指定対応
+
+ Redis保存
+
+ Redisキャッシュ
+
+ URLのコピーボタン（JS）
+
+ エラーハンドリング
+
+ Bootstrap対応のUI
+
+ Swagger API JSONファイル（OpenAPI 3）
